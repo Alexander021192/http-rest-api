@@ -8,3 +8,6 @@ test:
 		go test -v -race -timeout 30s ./...
 
 .DEFAULT_GOAL := build
+
+# brew services start postgresql
+# brew services stop postgresql
