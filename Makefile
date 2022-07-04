@@ -17,3 +17,5 @@ pgstop:
 
 .DEFAULT_GOAL := build
 
+# for curl test
+# curl -H 'Content-Type:application/json' -d '{"email":"invalid"}' http://localhost:8080/users
