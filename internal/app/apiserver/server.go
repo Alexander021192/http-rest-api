@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,12 +13,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
- 
+const (
+	sessionName = "alsavhenko"
+	ctxKeyUser ctxKey = iota
+)
 
 var (
-	sessionName = "alsavhenko"
 	errIncorectEmailOrPassword = errors.New("incorrect email or password")
+	errNotAuthenticated = errors.New("not authenticated")
 )
+
+type ctxKey int8
 
 type server struct {
 	router       *mux.Router
@@ -119,4 +125,31 @@ func (s *server) respond(w http.ResponseWriter, r *http.Request, code int, data 
 	if data != nil {
 		json.NewEncoder(w).Encode(data)
 	}
+}
+
+func (s *server) authenticateUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session, err := s.sessionStore.Get(r, sessionName)
+		if err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		id, ok := session.Values["user_id"]
+		if !ok {
+			s.error(w, r, http.StatusUnauthorized, errNotAuthenticated)
+			return
+		}
+
+		u, err := s.store.User().Find(id.(int))
+
+		if err != nil {
+			s.error(w, r, http.StatusUnauthorized, errNotAuthenticated)
+			return
+		}
+
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKeyUser, u)))
+
+
+	})
 }
