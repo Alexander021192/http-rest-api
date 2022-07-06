@@ -10,7 +10,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 make: *** No rule to make target `all'.  Stop.
 
 
-# Make data base, printed on Tue Jul  5 07:11:15 2022
+# Make data base, printed on Wed Jul  6 06:56:20 2022
 
 # Variables
 
@@ -45,7 +45,7 @@ __CFBundleIdentifier = com.microsoft.VSCode
 # environment
 INFOPATH = /opt/homebrew/share/info:
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /var/folders/s1/6hd3jz8x78gdwxf1pl85nx2w0000gp/T/vscode-ipc-97e84cca-e3bf-4473-8587-4ecaab03005b.sock
+VSCODE_IPC_HOOK_EXTHOST = /var/folders/s1/6hd3jz8x78gdwxf1pl85nx2w0000gp/T/vscode-ipc-b4979fca-7431-4a57-bbf1-440b36176731.sock
 # environment
 VSCODE_CWD = /
 # environment
@@ -100,7 +100,6 @@ MAKECMDGOALS := all
 SHLVL = 1
 # default
 MAKE_VERSION := 3.81
- 
 # environment
 USER = alsavchenko
 # makefile (from `Makefile', line 18)
@@ -242,7 +241,6 @@ pgstop:
 #  commands to execute (from `Makefile', line 16):
 	brew services stop postgresql
 	
- 
 
 # files hash-table stats:
 # Load=9/1024=1%, Rehash=0, Collisions=0/28=0%
@@ -257,6 +255,6 @@ pgstop:
 # strcache size: total = 4096 / max = 4096 / min = 4096 / avg = 4096
 # strcache free: total = 4087 / max = 4087 / min = 4087 / avg = 4087
 
-# Finished Make data base on Tue Jul  5 07:11:15 2022
+# Finished Make data base on Wed Jul  6 06:56:20 2022
 
  

@@ -5,22 +5,26 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/Alexander021192/http-rest-api/internal/app/model"
 	"github.com/Alexander021192/http-rest-api/internal/app/store"
+	"github.com/google/uuid"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	sessionName = "alsavhenko"
-	ctxKeyUser ctxKey = iota
+	sessionName            = "alsavhenko"
+	ctxKeyUser      ctxKey = iota
+	ctxKeyRequestID ctxKey = iota
 )
 
 var (
 	errIncorectEmailOrPassword = errors.New("incorrect email or password")
-	errNotAuthenticated = errors.New("not authenticated")
+	errNotAuthenticated        = errors.New("not authenticated")
 )
 
 type ctxKey int8
@@ -50,8 +54,17 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) configureRouter() {
+	s.router.Use(s.setRequestID)
+	s.router.Use(s.logRequest)
+
+	s.router.Use(handlers.CORS(handlers.AllowedOrigins([]string{"*"})))
 	s.router.HandleFunc("/users", s.handleUsersCreate()).Methods("POST")
 	s.router.HandleFunc("/sessions", s.handleSessionsCreate()).Methods("POST")
+
+	private := s.router.PathPrefix("/private").Subrouter()
+	private.Use(s.authenticateUser)
+	private.HandleFunc("/whoami", s.handlerWhoami()).Methods("GET")
+
 }
 
 func (s *server) handleUsersCreate() http.HandlerFunc {
@@ -111,7 +124,6 @@ func (s *server) handleSessionsCreate() http.HandlerFunc {
 			return
 		}
 
-
 		s.respond(w, r, http.StatusOK, nil)
 	}
 }
@@ -125,6 +137,35 @@ func (s *server) respond(w http.ResponseWriter, r *http.Request, code int, data 
 	if data != nil {
 		json.NewEncoder(w).Encode(data)
 	}
+}
+
+func (s *server) setRequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := uuid.New().String()
+		w.Header().Set("X-Request-ID", id)
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKeyRequestID, id)))
+	})
+}
+
+func (s *server) logRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger := s.logger.WithFields(logrus.Fields{
+			"remote_addr": r.RemoteAddr,
+			"request_id":  r.Context().Value(ctxKeyRequestID),
+		})
+
+		logger.Infof("started %s %s", r.Method, r.RequestURI)
+
+		start := time.Now()
+		rw := &responseWriter{w, http.StatusOK}
+		next.ServeHTTP(rw, r)
+		logger.Infof(
+			"completed with %d %s in %v",
+			rw.code,
+			http.StatusText(rw.code),
+			time.Now().Sub(start))
+
+	})
 }
 
 func (s *server) authenticateUser(next http.Handler) http.Handler {
@@ -150,6 +191,10 @@ func (s *server) authenticateUser(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKeyUser, u)))
 
-
 	})
+}
+func (s *server) handlerWhoami() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.respond(w, r, http.StatusOK, r.Context().Value(ctxKeyUser).(*model.User))
+	}
 }
